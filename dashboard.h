@@ -1,7 +1,10 @@
 #pragma once
 
 #include <QWidget>
-#include<QPushButton>
+#include <QPushButton>
+#include <QGridLayout>
+#include <QVBoxLayout>
+#include <QGroupBox>
 
 class Dashboard : public QWidget {
   public:
@@ -13,4 +16,15 @@ class Dashboard : public QWidget {
 
   private:
     QPushButton *btn;
+
+    QGridLayout *grid;
+    QBoxLayout *left;
+    QBoxLayout *right;
+
+    QGroupBox *ipGroup;
+    QGroupBox *configGroup;
+    QGroupBox *channel1LineChartGroup;
+    QGroupBox *channel2LineChartGroup;
+
+
 };

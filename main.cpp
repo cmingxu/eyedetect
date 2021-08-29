@@ -16,8 +16,8 @@
 #include "dashboard.h"
 
 
-static const int HEIGHT = 300;
-static const int WIDTH = 450;
+static const int HEIGHT = 500;
+static const int WIDTH = 700;
 static const char *title = "Window Title";
 
 int main(int argc, char *argv[]) {
