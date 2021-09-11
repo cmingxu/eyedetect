@@ -5,6 +5,8 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QGroupBox>
+#include <QLineEdit>
+#include <QComboBox>
 
 class Dashboard : public QWidget {
   public:
@@ -16,15 +18,37 @@ class Dashboard : public QWidget {
 
   private:
     QPushButton *btn;
+    QPushButton *startConnectBtn;
 
     QGridLayout *grid;
     QBoxLayout *left;
     QBoxLayout *right;
 
-    QGroupBox *ipGroup;
-    QGroupBox *configGroup;
-    QGroupBox *channel1LineChartGroup;
-    QGroupBox *channel2LineChartGroup;
+    QLineEdit *sampleCountLineEdit;
+    QLineEdit *delayCountLineEdit;
+    QLineEdit *repeatLineEdit;
+    QLineEdit *sampleCount2LineEdit;
+    QComboBox *triggerCombo;
+    QComboBox *outerTriggerCombo;
+    QLineEdit *channelCountLineEdit;
+    QLineEdit *adBitLineEdit;
 
+    QLineEdit *packageCountLineEdit;
+    QPushButton *packageCountBtn;
+    QPushButton *writeConfigBtn;
+    QPushButton *sendConfigBtn;
+
+    QPushButton *startCollectBtn;
+    QPushButton *stopCollectBtn;
+
+    QLineEdit *localIPLineEdit;
+    QLineEdit *localPortLineEdit;
+    QLineEdit *newLocalIPLineEdit;
+    QLineEdit *newLocalPortLineEdit;
+
+    QLineEdit *deviceIPLineEdit;
+    QLineEdit *devicePortLineEdit;
+    QLineEdit *newDeviceIPLineEdit;
+    QLineEdit *newDevicePortLineEdit;
 
 };

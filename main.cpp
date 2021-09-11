@@ -16,15 +16,17 @@
 #include "dashboard.h"
 
 
-static const int HEIGHT = 500;
-static const int WIDTH = 700;
-static const char *title = "Window Title";
+static const int HEIGHT = 700;
+static const int WIDTH = 1100;
+static const char *title = "网络接收程序";
 
 int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
   LOG(INFO) << "begin ";
 
   QApplication app(argc, argv);
+  QCoreApplication::setApplicationName("网络接收程序");
+
   Dashboard window;
 
   window.resize(WIDTH, HEIGHT);
