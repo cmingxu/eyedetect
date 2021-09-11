@@ -7,6 +7,7 @@
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QComboBox>
+#include "ed.h"
 
 class Dashboard : public QWidget {
   public:
@@ -15,6 +16,9 @@ class Dashboard : public QWidget {
 
   private slots:
     void onBtnClicked();
+
+  private:
+    config_t *cfg;
 
   private:
     QPushButton *btn;
@@ -30,8 +34,8 @@ class Dashboard : public QWidget {
     QLineEdit *sampleCount2LineEdit;
     QComboBox *triggerCombo;
     QComboBox *outerTriggerCombo;
-    QLineEdit *channelCountLineEdit;
-    QLineEdit *adBitLineEdit;
+    QComboBox *channelCountCombo;
+    QComboBox *adBitCombo;
 
     QLineEdit *packageCountLineEdit;
     QPushButton *packageCountBtn;
@@ -50,5 +54,4 @@ class Dashboard : public QWidget {
     QLineEdit *devicePortLineEdit;
     QLineEdit *newDeviceIPLineEdit;
     QLineEdit *newDevicePortLineEdit;
-
 };

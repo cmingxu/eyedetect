@@ -1,4 +1,3 @@
-#include "dashboard.h"
 #include <iostream>
 
 #include <QtCharts>
@@ -7,9 +6,16 @@
 #include <QChartView>
 #include <QLabel>
 
+#include "dashboard.h"
+
+#include "ed.h"
+
 QChartView *createChannel1ChartView();
 
 Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
+  cfg = (config_t *)malloc(sizeof(config_t));
+  load_default_config(cfg);
+
   grid = new QGridLayout(this);
   setLayout(grid);
 
@@ -31,38 +37,38 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   QGridLayout *ipGridLayout = new QGridLayout(this);
   QLabel *deviceIpLabel = new QLabel("目的IP", this);
   ipGridLayout->addWidget(deviceIpLabel, 0, 0, 1, 2);
-  deviceIPLineEdit = new QLineEdit(this);
+  deviceIPLineEdit = new QLineEdit(cfg->device_ip, this);
   ipGridLayout->addWidget(deviceIPLineEdit, 0, 2, 1, 4);
   QLabel *devicePortLabel = new QLabel("目的端口", this);
   ipGridLayout->addWidget(devicePortLabel, 0, 6, 1, 2);
-  devicePortLineEdit = new QLineEdit(this);
+  devicePortLineEdit = new QLineEdit(QString::number(cfg->device_port), this);
   ipGridLayout->addWidget(devicePortLineEdit, 0, 8, 1, 2);
 
   QLabel *newDeviceIpLabel = new QLabel("目的IP更新", this);
   ipGridLayout->addWidget(newDeviceIpLabel, 1, 0, 1, 2);
-  newDeviceIPLineEdit = new QLineEdit(this);
+  newDeviceIPLineEdit = new QLineEdit(cfg->device_ip, this);
   ipGridLayout->addWidget(newDeviceIPLineEdit, 1, 2, 1, 4);
   QLabel *newDevicePortLabel = new QLabel("目的端口更新", this);
   ipGridLayout->addWidget(newDevicePortLabel, 1, 6, 1, 2);
-  newDevicePortLineEdit = new QLineEdit(this);
+  newDevicePortLineEdit = new QLineEdit(QString::number(cfg->device_port), this);
   ipGridLayout->addWidget(newDevicePortLineEdit, 1, 8, 1, 2);
 
   QLabel *localIPLabel = new QLabel("本地IP", this);
   ipGridLayout->addWidget(localIPLabel, 2, 0, 1, 2);
-  localIPLineEdit = new QLineEdit(this);
+  localIPLineEdit = new QLineEdit(cfg->local_ip, this);
   ipGridLayout->addWidget(localIPLineEdit, 2, 2, 1, 4);
   QLabel *localPortLabel = new QLabel("本地端口", this);
   ipGridLayout->addWidget(localPortLabel, 2, 6, 1, 2);
-  localPortLineEdit = new QLineEdit(this);
+  localPortLineEdit = new QLineEdit(QString::number(cfg->local_port), this);
   ipGridLayout->addWidget(localPortLineEdit, 2, 8, 1, 2);
 
   QLabel *newLocalIPLabel = new QLabel("本地IP更新", this);
   ipGridLayout->addWidget(newLocalIPLabel, 3, 0, 1, 2);
-  newLocalIPLineEdit = new QLineEdit(this);
+  newLocalIPLineEdit = new QLineEdit(cfg->local_ip, this);
   ipGridLayout->addWidget(newLocalIPLineEdit, 3, 2, 1, 4);
   QLabel *newLocalPortLabel = new QLabel("本地端口更新", this);
   ipGridLayout->addWidget(newLocalPortLabel, 3, 6, 1, 2);
-  newLocalPortLineEdit = new QLineEdit(this);
+  newLocalPortLineEdit = new QLineEdit(QString::number(cfg->local_port), this);
   ipGridLayout->addWidget(newLocalPortLineEdit, 3, 8, 1, 2);
 
   startConnectBtn = new QPushButton("建立连接", this);
@@ -73,7 +79,7 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   QGridLayout *configGridLayout = new QGridLayout(this);
 
   QLabel *sampleCountLabel = new QLabel("采样个数", this);
-  sampleCountLineEdit = new QLineEdit(this);
+  sampleCountLineEdit = new QLineEdit(QString::number(cfg->sample_count), this);
   QLabel *triggerLabel = new QLabel("触发模式", this);
   triggerCombo = new QComboBox(this);
   triggerCombo->addItem("内触发");
@@ -84,7 +90,7 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   configGridLayout->addWidget(triggerCombo, 0, 7, 1, 2);
 
   QLabel *delayCountLabel = new QLabel("延时个数", this);
-  delayCountLineEdit = new QLineEdit(this);
+  delayCountLineEdit = new QLineEdit(QString::number(cfg->delay_count), this);
   QLabel *outerTriggerLabel = new QLabel("外触发边沿", this);
   outerTriggerCombo = new QComboBox(this);
   outerTriggerCombo->addItem("下降沿");
@@ -95,28 +101,33 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   configGridLayout->addWidget(outerTriggerCombo, 1, 7, 1, 2);
 
   QLabel *repeatLabel = new QLabel("重复次数", this);
-  repeatLineEdit = new QLineEdit(this);
+  repeatLineEdit = new QLineEdit(QString::number(cfg->repeat_count), this);
   QLabel *channelCountLabel = new QLabel("通道个数", this);
-  channelCountLineEdit = new QLineEdit(this);
+  channelCountCombo = new QComboBox(this);
+  channelCountCombo->addItem("单通道");
+  channelCountCombo->addItem("双通道");
   configGridLayout->addWidget(repeatLabel, 2, 0, 1, 2);
   configGridLayout->addWidget(repeatLineEdit, 2, 3, 1, 2);
   configGridLayout->addWidget(channelCountLabel, 2, 5, 1, 2);
-  configGridLayout->addWidget(channelCountLineEdit, 2, 7, 1, 2);
+  configGridLayout->addWidget(channelCountCombo, 2, 7, 1, 2);
 
   QLabel *sampleCount2Label = new QLabel("降采样个数", this);
-  sampleCount2LineEdit = new QLineEdit(this);
+  sampleCount2LineEdit = new QLineEdit(QString::number(cfg->sample_count2), this);
   QLabel *adBitLabel = new QLabel("AD Bit", this);
-  adBitLineEdit = new QLineEdit(this);
+  adBitCombo = new QComboBox(this);
+  adBitCombo->addItem("12");
+  adBitCombo->addItem("14");
   configGridLayout->addWidget(sampleCount2Label, 3, 0, 1, 2);
   configGridLayout->addWidget(sampleCount2LineEdit, 3, 3, 1, 2);
   configGridLayout->addWidget(adBitLabel, 3, 5, 1, 2);
-  configGridLayout->addWidget(adBitLineEdit, 3, 7, 1, 2);
+  configGridLayout->addWidget(adBitCombo, 3, 7, 1, 2);
 
   packageCountBtn = new QPushButton("计算包数量", this);
   configGridLayout->addWidget(packageCountBtn, 4, 1, 1, 2);
   QLabel *packageCountLabel = new QLabel("包数量", this);
   configGridLayout->addWidget(packageCountLabel, 4, 5, 1, 2);
-  packageCountLineEdit = new QLineEdit(this);
+  packageCountLineEdit = new QLineEdit(QString::number(package_count(cfg)), this);
+  packageCountLineEdit->setReadOnly(true);
   configGridLayout->addWidget(packageCountLineEdit, 4, 7, 1, 2);
 
   writeConfigBtn = new QPushButton("存储配置", this);
