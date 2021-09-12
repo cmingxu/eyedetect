@@ -1,4 +1,5 @@
 #include <iostream>
+#include <glog/logging.h> 
 
 #include <QtCharts>
 #include <QChart>
@@ -151,6 +152,9 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   box2->addWidget(createChannel1ChartView());
   channel2LineChartGroup->setLayout(box2);
 
+  setupValidatorForUIFields();
+  setupConnections();
+
   left->addWidget(ipGroup);
   left->addWidget(configGroup);
   left->addWidget(dataReceiveGroup);
@@ -184,3 +188,74 @@ void Dashboard::onBtnClicked() {
   std::cout << "on btnc clicked" << std::endl;
 }
 
+void Dashboard::setupValidatorForUIFields() {
+  localPortLineEdit->setValidator(new QIntValidator(0, 65535));
+  devicePortLineEdit->setValidator(new QIntValidator(0, 65535));
+  newLocalPortLineEdit->setValidator(new QIntValidator(0, 65535));
+  newDevicePortLineEdit->setValidator(new QIntValidator(0, 65535));
+
+  QString ipRange = "(([ 0]+)|([ 0]*[0-9] *)|([0-9][0-9] )|([ 0][0-9][0-9])|(1[0-9][0-9])|([2][0-4][0-9])|(25[0-5]))";
+  QRegExp ipRegex ("^" + ipRange
+      + "\\." + ipRange
+      + "\\." + ipRange
+      + "\\." + ipRange + "$");
+  QRegExpValidator *ipValidator = new QRegExpValidator(ipRegex, this);
+
+  localIPLineEdit->setValidator(ipValidator);
+  localIPLineEdit->setInputMask("000.000.000.000");
+  localIPLineEdit->setCursorPosition(0);
+
+  newLocalIPLineEdit->setValidator(ipValidator);
+  newLocalIPLineEdit->setInputMask("000.000.000.000");
+  newLocalIPLineEdit->setCursorPosition(0);
+
+  deviceIPLineEdit->setValidator(ipValidator);
+  deviceIPLineEdit->setInputMask("000.000.000.000");
+  deviceIPLineEdit->setCursorPosition(0);
+
+  newDeviceIPLineEdit->setValidator(ipValidator);
+  newDeviceIPLineEdit->setInputMask("000.000.000.000");
+  newDeviceIPLineEdit->setCursorPosition(0);
+
+  // 1073741824
+  sampleCountLineEdit->setValidator(new QIntValidator(0, std::pow(2, 30)));
+  delayCountLineEdit->setValidator(new QIntValidator(0, std::pow(2, 30)));
+  repeatLineEdit->setValidator(new QIntValidator(0, std::pow(2, 10)));
+  sampleCount2LineEdit->setValidator(new QIntValidator(0, std::pow(2, 10)));
+}
+
+void Dashboard::setupConnections() {
+  LOG(INFO) << "Dashboard::setupConnections";
+
+  connect(startConnectBtn, &QPushButton::clicked, this, &Dashboard::onStartConnectBtnClicked);
+  connect(packageCountBtn, &QPushButton::clicked, this, &Dashboard::onPackageCountBtnClicked);
+  connect(writeConfigBtn, &QPushButton::clicked, this, &Dashboard::onWriteConfigBtnClicked);
+  connect(sendConfigBtn, &QPushButton::clicked, this, &Dashboard::onSendConfigBtnClicked);
+  connect(startCollectBtn, &QPushButton::clicked, this, &Dashboard::onStartReceiveBtnClicked);
+  connect(stopCollectBtn, &QPushButton::clicked, this, &Dashboard::onStopReceiveBtnClicked);
+}
+
+void Dashboard::onStartConnectBtnClicked(){
+  LOG(INFO) << "Dashboard::onStartConnectBtnClicked";
+}
+
+void Dashboard::onPackageCountBtnClicked(){
+  LOG(INFO) << "Dashboard::onPackageCountBtnClicked";
+  packageCountLineEdit->setText(QString::number(package_count(cfg)));
+}
+
+void Dashboard::onWriteConfigBtnClicked(){
+  LOG(INFO) << "Dashboard::onWriteConfigBtnClicked";
+}
+
+void Dashboard::onSendConfigBtnClicked(){
+  LOG(INFO) << "Dashboard::onSendConfigBtnClicked";
+}
+
+void Dashboard::onStartReceiveBtnClicked(){
+  LOG(INFO) << "Dashboard::onStartReceiveBtnClicked";
+}
+
+void Dashboard::onStopReceiveBtnClicked(){
+  LOG(INFO) << "Dashboard::onStopReceiveBtnClicked";
+}

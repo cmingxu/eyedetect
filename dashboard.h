@@ -16,9 +16,19 @@ class Dashboard : public QWidget {
 
   private slots:
     void onBtnClicked();
+    void onStartConnectBtnClicked();
+    void onPackageCountBtnClicked();
+    void onWriteConfigBtnClicked();
+    void onSendConfigBtnClicked();
+    void onStartReceiveBtnClicked();
+    void onStopReceiveBtnClicked();
 
   private:
     config_t *cfg;
+
+  private:
+    void setupValidatorForUIFields();
+    void setupConnections();
 
   private:
     QPushButton *btn;

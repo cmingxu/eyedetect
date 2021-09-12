@@ -22,7 +22,10 @@ static const char *title = "网络接收程序";
 
 int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
-  LOG(INFO) << "begin ";
+  google::InstallFailureSignalHandler();
+
+  FLAGS_logtostderr = 1;
+  LOG(INFO) << "stderr";
 
   QApplication app(argc, argv);
   QCoreApplication::setApplicationName("网络接收程序");
