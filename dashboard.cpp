@@ -17,8 +17,11 @@ QChartView *createChannel1ChartView();
 
 Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   cfg = (config_t *)malloc(sizeof(config_t));
+  memset(cfg, 0, sizeof(config_t));
   load_default_config(cfg);
+
   addr = (addr_t *)malloc(sizeof(addr_t));
+  memset(addr, 0, sizeof(addr_t));
 
   grid = new QGridLayout(this);
   setupUIs();
@@ -47,10 +50,6 @@ QChartView* createChannel1ChartView() {
   QChartView *chartView = new QChartView(chart);
   chartView->setRenderHint(QPainter::Antialiasing);
   return chartView;
-}
-
-void Dashboard::onBtnClicked() {
-  std::cout << "on btnc clicked" << std::endl;
 }
 
 void Dashboard::setupUIs() {
@@ -168,7 +167,7 @@ void Dashboard::setupUIs() {
   configGridLayout->addWidget(adBitCombo, 3, 7, 1, 2);
 
   packageCountBtn = new QPushButton("计算包数量", this);
-  configGridLayout->addWidget(packageCountBtn, 4, 1, 1, 2);
+  configGridLayout->addWidget(packageCountBtn, 4, 0, 1, 2);
   QLabel *packageCountLabel = new QLabel("包数量", this);
   configGridLayout->addWidget(packageCountLabel, 4, 5, 1, 2);
   packageCountLineEdit = new QLineEdit(this);
@@ -177,9 +176,13 @@ void Dashboard::setupUIs() {
   configGridLayout->addWidget(packageCountLineEdit, 4, 7, 1, 2);
 
   writeConfigBtn = new QPushButton("存储配置", this);
+  configGridLayout->addWidget(writeConfigBtn, 5, 0, 1, 2);
+  loadConfigBtn = new QPushButton("加载配置", this);
+  configGridLayout->addWidget(loadConfigBtn, 5, 3, 1, 2);
+  loadDefaultConfigBtn = new QPushButton("重置配置", this);
+  configGridLayout->addWidget(loadDefaultConfigBtn, 5, 5, 1, 2);
   sendConfigBtn = new QPushButton("发送配置", this);
-  configGridLayout->addWidget(writeConfigBtn, 5, 1, 1, 2);
-  configGridLayout->addWidget(sendConfigBtn, 5, 6, 1, 2);
+  configGridLayout->addWidget(sendConfigBtn, 5, 7, 1, 2);
   configGroup->setLayout(configGridLayout);
 
   QGridLayout *dataReceiveGridLayout = new QGridLayout(this);
@@ -226,7 +229,7 @@ void Dashboard::setupValues(config_t *cfg) {
   outerTriggerCombo->setCurrentIndex(cfg->outer_trigger);
 
   repeatLineEdit->setText(QString::number(cfg->repeat_count));
-  channelCountCombo->setCurrentIndex(cfg->ad_channel - 1);
+  channelCountCombo->setCurrentIndex(cfg->ad_channel-1);
 
   sampleCount2LineEdit->setText(QString::number(cfg->sample_count2));
   if(cfg->ad_bit == 12) {
@@ -282,9 +285,42 @@ void Dashboard::setupConnections() {
   connect(disconnectDeviceBtn, &QPushButton::clicked, this, &Dashboard::onDisconnectDeviceBtnClicked);
   connect(packageCountBtn, &QPushButton::clicked, this, &Dashboard::onPackageCountBtnClicked);
   connect(writeConfigBtn, &QPushButton::clicked, this, &Dashboard::onWriteConfigBtnClicked);
+  connect(loadConfigBtn, &QPushButton::clicked, this, &Dashboard::onLoadConfigBtnClicked);
+  connect(loadDefaultConfigBtn, &QPushButton::clicked, this, &Dashboard::onLoadDefaultConfigBtnClicked);
   connect(sendConfigBtn, &QPushButton::clicked, this, &Dashboard::onSendConfigBtnClicked);
   connect(startCollectBtn, &QPushButton::clicked, this, &Dashboard::onStartReceiveBtnClicked);
   connect(stopCollectBtn, &QPushButton::clicked, this, &Dashboard::onStopReceiveBtnClicked);
+}
+
+config_t *Dashboard::config_from_ui() {
+  config_t *c = (config_t *)malloc(sizeof(config_t));
+  memset(c, 0, sizeof(config_t));
+  const char *newDeviceIp = newDeviceIPLineEdit->text().trimmed().toStdString().c_str();
+  strncpy(c->device_ip, newDeviceIp, strlen(newDeviceIp));
+  c->device_port =  (unsigned int)newDevicePortLineEdit->text().trimmed().toInt();
+  const char *newLocalIp = newLocalIPLineEdit->text().trimmed().toStdString().c_str();
+  strncpy(c->local_ip, newLocalIp, strlen(newLocalIp));
+  c->local_port =  (unsigned int)newLocalPortLineEdit->text().trimmed().toInt();
+  c->sample_count = (unsigned int)sampleCountLineEdit->text().trimmed().toInt();
+  c->delay_count = (unsigned int)delayCountLineEdit->text().trimmed().toInt();
+  c->repeat_count = (unsigned int)repeatLineEdit->text().trimmed().toInt();
+  c->sample_count2 = (unsigned int)sampleCount2LineEdit->text().trimmed().toInt();
+  c->trigger = triggerCombo->currentIndex();
+  c->outer_trigger = outerTriggerCombo->currentIndex();
+  c->ad_channel = channelCountCombo->currentIndex() + 1;
+  if(adBitCombo->currentIndex() == 0) {
+    c->ad_bit = ADBIT_12;
+  }else{
+    c->ad_bit = ADBIT_14;
+  }
+
+  std::cout << c->device_ip << std::endl;
+  std::cout << "sample: " << c->sample_count  << std::endl;
+  std::cout << "trigger: " << c->trigger  << std::endl;
+  std::cout << "outerTrigger: " << c->outer_trigger  << std::endl;
+  std::cout << "ad_channel: " << c->ad_channel  << std::endl;
+
+  return c;
 }
 
 void Dashboard::onConnectDeviceBtnClicked(){
@@ -333,7 +369,8 @@ void Dashboard::onWriteConfigBtnClicked(){
     QMessageBox::warning(this, "保存配置", "配置保存失败, 文件打开失败");
     return;
   }
-  int res = write_config(cfg, fp);
+
+  int res = write_config(config_from_ui(), fp);
   if(res == WRITE_CONFIG_SUCCESS) {
     QMessageBox::about(this, "保存配置", "配置保存成功");
   }else{
@@ -343,14 +380,102 @@ void Dashboard::onWriteConfigBtnClicked(){
   fclose(fp);
 }
 
+void Dashboard::onLoadDefaultConfigBtnClicked(){
+  LOG(INFO) << "Dashboard::onLoadDefaultConfigBtnClicked";
+
+  config_t *c = (config_t *)malloc(sizeof(config_t));
+  memset(c, 0, sizeof(config_t));
+
+  load_default_config(c);
+  free(cfg);
+  cfg = c;
+  setupValues(cfg);
+}
+
+void Dashboard::onLoadConfigBtnClicked(){
+  LOG(INFO) << "Dashboard::onLoadConfigBtnClicked";
+
+  QString fileName = QFileDialog::getOpenFileName(this,
+      "Load config from File", 
+      "",
+      "All Files (*)");
+  if (fileName.isEmpty())
+    return;
+  else {
+    std::cout << fileName.toStdString() << std::endl;
+  }
+
+  FILE *fp = fopen(fileName.toStdString().c_str(), "r");
+  if(fp == NULL) {
+    QMessageBox::warning(this, "加载配置", "配置加载失败, 文件打开失败");
+    return;
+  }
+
+  config_t *c = (config_t *)malloc(sizeof(config_t));
+  memset(c, 0, sizeof(config_t));
+
+  int res = load_config(c, fp);
+  if(res == READ_CONFIG_SUCCESS) {
+    QMessageBox::about(this, "加载配置", "配置加载成功");
+    // override default config
+    cfg = c;
+    setupValues(cfg);
+  }else{
+    QMessageBox::warning(this, "加载配置", "配置加载失败");
+  }
+
+  fclose(fp);
+}
+
 void Dashboard::onSendConfigBtnClicked(){
   LOG(INFO) << "Dashboard::onSendConfigBtnClicked";
+
+  int res = send_config_to_device(cfg, addr);
+  if(res == SEND_CONFIG_SUCCESS) {
+    QMessageBox::about(this, "写入配置", "配置写入成功");
+  }else{
+    QMessageBox::warning(this, "写入配置", "配置写入失败");
+  }
 }
 
 void Dashboard::onStartReceiveBtnClicked(){
   LOG(INFO) << "Dashboard::onStartReceiveBtnClicked";
+
+  QString fileName = QFileDialog::getSaveFileName(this,
+      "Write metrics to File", 
+      "",
+      "All Files (*)");
+  if (fileName.isEmpty())
+    return;
+  else {
+    std::cout << fileName.toStdString() << std::endl;
+  }
+
+  FILE *fp = fopen(fileName.toStdString().c_str(), "w");
+  if(fp == NULL) {
+    QMessageBox::warning(this, "开始采集", "数据采集, 文件打开失败");
+    return;
+  }
+
+  int res = start_collect(cfg, addr);
+  if(res != WRITE_CONFIG_SUCCESS) {
+    QMessageBox::warning(this, "内部触发", "内部触发失败");
+    LOG(ERROR) << "start_collect failed: " << res;
+    return;
+  }
+
+  startCollectBtn->setEnabled(true);
+  start_recv(cfg, addr, fp);
+  startCollectBtn->setEnabled(false);
+  fclose(fp);
 }
 
 void Dashboard::onStopReceiveBtnClicked(){
   LOG(INFO) << "Dashboard::onStopReceiveBtnClicked";
+  int res = stop_collect(cfg, addr);
+  if(res == STOP_COLLECT_SUCCESS) {
+    QMessageBox::about(this, "停止采集", "停止采集成功");
+  }else{
+    QMessageBox::warning(this, "停止采集", "停止采集失败");
+  }
 }

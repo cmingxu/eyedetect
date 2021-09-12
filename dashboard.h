@@ -15,11 +15,12 @@ class Dashboard : public QWidget {
     virtual ~Dashboard() = default;
 
   private slots:
-    void onBtnClicked();
     void onConnectDeviceBtnClicked();
     void onDisconnectDeviceBtnClicked();
     void onPackageCountBtnClicked();
     void onWriteConfigBtnClicked();
+    void onLoadConfigBtnClicked();
+    void onLoadDefaultConfigBtnClicked();
     void onSendConfigBtnClicked();
     void onStartReceiveBtnClicked();
     void onStopReceiveBtnClicked();
@@ -37,9 +38,9 @@ class Dashboard : public QWidget {
     void setupValues(config_t *);
     void setupValidatorForUIFields();
     void setupConnections();
+    config_t *config_from_ui();
 
   private:
-    QPushButton *btn;
     QPushButton *connectDeviceBtn;
     QPushButton *disconnectDeviceBtn;
 
@@ -59,6 +60,8 @@ class Dashboard : public QWidget {
     QLineEdit *packageCountLineEdit;
     QPushButton *packageCountBtn;
     QPushButton *writeConfigBtn;
+    QPushButton *loadConfigBtn;
+    QPushButton *loadDefaultConfigBtn;
     QPushButton *sendConfigBtn;
 
     QPushButton *startCollectBtn;
