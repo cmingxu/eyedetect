@@ -6,6 +6,8 @@
 #include <QLineSeries>
 #include <QChartView>
 #include <QLabel>
+#include <QMessageBox>
+#include <QFileDialog>
 
 #include "dashboard.h"
 
@@ -16,12 +18,42 @@ QChartView *createChannel1ChartView();
 Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   cfg = (config_t *)malloc(sizeof(config_t));
   load_default_config(cfg);
+  addr = (addr_t *)malloc(sizeof(addr_t));
 
   grid = new QGridLayout(this);
+  setupUIs();
+  setupValues(cfg);
+
   setLayout(grid);
-
   setWindowTitle( QCoreApplication::applicationName() );
+}
 
+
+QChartView* createChannel1ChartView() {
+  QLineSeries *series = new QLineSeries();
+  series->append(0, 6);
+  series->append(2, 4);
+  series->append(3, 8);
+  series->append(7, 4);
+  series->append(10, 5);
+  *series << QPointF(11, 1) << QPointF(13, 3) << QPointF(17, 6) << QPointF(18, 3) << QPointF(20, 2);
+
+  QChart *chart = new QChart();
+  chart->legend()->hide();
+  chart->addSeries(series);
+  chart->createDefaultAxes();
+  chart->setTitle("Simple line chart example");
+
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+  return chartView;
+}
+
+void Dashboard::onBtnClicked() {
+  std::cout << "on btnc clicked" << std::endl;
+}
+
+void Dashboard::setupUIs() {
   left = new QVBoxLayout(this);
   right = new QVBoxLayout(this);
   grid->addLayout(left, 0, 0);
@@ -38,11 +70,15 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   QGridLayout *ipGridLayout = new QGridLayout(this);
   QLabel *deviceIpLabel = new QLabel("目的IP", this);
   ipGridLayout->addWidget(deviceIpLabel, 0, 0, 1, 2);
-  deviceIPLineEdit = new QLineEdit(cfg->device_ip, this);
+  deviceIPLineEdit = new QLineEdit(this);
+  deviceIPLineEdit->setReadOnly(true);
+  deviceIPLineEdit->setEnabled(false);
   ipGridLayout->addWidget(deviceIPLineEdit, 0, 2, 1, 4);
   QLabel *devicePortLabel = new QLabel("目的端口", this);
   ipGridLayout->addWidget(devicePortLabel, 0, 6, 1, 2);
-  devicePortLineEdit = new QLineEdit(QString::number(cfg->device_port), this);
+  devicePortLineEdit = new QLineEdit(this);
+  devicePortLineEdit->setReadOnly(true);
+  devicePortLineEdit->setEnabled(false);
   ipGridLayout->addWidget(devicePortLineEdit, 0, 8, 1, 2);
 
   QLabel *newDeviceIpLabel = new QLabel("目的IP更新", this);
@@ -57,41 +93,49 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   QLabel *localIPLabel = new QLabel("本地IP", this);
   ipGridLayout->addWidget(localIPLabel, 2, 0, 1, 2);
   localIPLineEdit = new QLineEdit(cfg->local_ip, this);
+  localIPLineEdit->setReadOnly(true);
+  localIPLineEdit->setEnabled(false);
   ipGridLayout->addWidget(localIPLineEdit, 2, 2, 1, 4);
   QLabel *localPortLabel = new QLabel("本地端口", this);
   ipGridLayout->addWidget(localPortLabel, 2, 6, 1, 2);
   localPortLineEdit = new QLineEdit(QString::number(cfg->local_port), this);
+  localPortLineEdit->setReadOnly(true);
+  localPortLineEdit->setEnabled(false);
   ipGridLayout->addWidget(localPortLineEdit, 2, 8, 1, 2);
 
   QLabel *newLocalIPLabel = new QLabel("本地IP更新", this);
   ipGridLayout->addWidget(newLocalIPLabel, 3, 0, 1, 2);
-  newLocalIPLineEdit = new QLineEdit(cfg->local_ip, this);
+  newLocalIPLineEdit = new QLineEdit(this);
   ipGridLayout->addWidget(newLocalIPLineEdit, 3, 2, 1, 4);
   QLabel *newLocalPortLabel = new QLabel("本地端口更新", this);
   ipGridLayout->addWidget(newLocalPortLabel, 3, 6, 1, 2);
-  newLocalPortLineEdit = new QLineEdit(QString::number(cfg->local_port), this);
+  newLocalPortLineEdit = new QLineEdit(this);
   ipGridLayout->addWidget(newLocalPortLineEdit, 3, 8, 1, 2);
 
-  startConnectBtn = new QPushButton("建立连接", this);
-  ipGridLayout->addWidget(startConnectBtn, 4, 1, 1, 3);
+  connectDeviceBtn = new QPushButton("建立连接", this);
+  ipGridLayout->addWidget(connectDeviceBtn, 4, 1, 1, 3);
+
+  disconnectDeviceBtn = new QPushButton("断开连接", this);
+  disconnectDeviceBtn->setEnabled(false);
+  ipGridLayout->addWidget(disconnectDeviceBtn, 4, 6, 1, 3);
   ipGroup->setLayout(ipGridLayout);
 
   // setup config group box
   QGridLayout *configGridLayout = new QGridLayout(this);
 
   QLabel *sampleCountLabel = new QLabel("采样个数", this);
-  sampleCountLineEdit = new QLineEdit(QString::number(cfg->sample_count), this);
+  sampleCountLineEdit = new QLineEdit(this);
   QLabel *triggerLabel = new QLabel("触发模式", this);
   triggerCombo = new QComboBox(this);
-  triggerCombo->addItem("内触发");
   triggerCombo->addItem("外触发");
+  triggerCombo->addItem("内触发");
   configGridLayout->addWidget(sampleCountLabel, 0, 0, 1, 2);
   configGridLayout->addWidget(sampleCountLineEdit, 0, 3, 1, 2);
   configGridLayout->addWidget(triggerLabel, 0, 5, 1, 2);
   configGridLayout->addWidget(triggerCombo, 0, 7, 1, 2);
 
   QLabel *delayCountLabel = new QLabel("延时个数", this);
-  delayCountLineEdit = new QLineEdit(QString::number(cfg->delay_count), this);
+  delayCountLineEdit = new QLineEdit(this);
   QLabel *outerTriggerLabel = new QLabel("外触发边沿", this);
   outerTriggerCombo = new QComboBox(this);
   outerTriggerCombo->addItem("下降沿");
@@ -102,7 +146,7 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   configGridLayout->addWidget(outerTriggerCombo, 1, 7, 1, 2);
 
   QLabel *repeatLabel = new QLabel("重复次数", this);
-  repeatLineEdit = new QLineEdit(QString::number(cfg->repeat_count), this);
+  repeatLineEdit = new QLineEdit(this);
   QLabel *channelCountLabel = new QLabel("通道个数", this);
   channelCountCombo = new QComboBox(this);
   channelCountCombo->addItem("单通道");
@@ -113,7 +157,7 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   configGridLayout->addWidget(channelCountCombo, 2, 7, 1, 2);
 
   QLabel *sampleCount2Label = new QLabel("降采样个数", this);
-  sampleCount2LineEdit = new QLineEdit(QString::number(cfg->sample_count2), this);
+  sampleCount2LineEdit = new QLineEdit(this);
   QLabel *adBitLabel = new QLabel("AD Bit", this);
   adBitCombo = new QComboBox(this);
   adBitCombo->addItem("12");
@@ -127,8 +171,9 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   configGridLayout->addWidget(packageCountBtn, 4, 1, 1, 2);
   QLabel *packageCountLabel = new QLabel("包数量", this);
   configGridLayout->addWidget(packageCountLabel, 4, 5, 1, 2);
-  packageCountLineEdit = new QLineEdit(QString::number(package_count(cfg)), this);
+  packageCountLineEdit = new QLineEdit(this);
   packageCountLineEdit->setReadOnly(true);
+  packageCountLineEdit->setEnabled(false);
   configGridLayout->addWidget(packageCountLineEdit, 4, 7, 1, 2);
 
   writeConfigBtn = new QPushButton("存储配置", this);
@@ -163,29 +208,35 @@ Dashboard::Dashboard(QWidget *parent) : QWidget(parent) {
   right->addWidget(channel2LineChartGroup);
 }
 
+void Dashboard::setupValues(config_t *cfg) {
+  deviceIPLineEdit->setText(cfg->device_ip);
+  devicePortLineEdit->setText(QString::number(cfg->device_port));
+  newDeviceIPLineEdit->setText(cfg->device_ip);
+  newDevicePortLineEdit->setText(QString::number(cfg->device_port));
 
-QChartView* createChannel1ChartView() {
-  QLineSeries *series = new QLineSeries();
-  series->append(0, 6);
-  series->append(2, 4);
-  series->append(3, 8);
-  series->append(7, 4);
-  series->append(10, 5);
-  *series << QPointF(11, 1) << QPointF(13, 3) << QPointF(17, 6) << QPointF(18, 3) << QPointF(20, 2);
+  localIPLineEdit->setText(cfg->local_ip);
+  localPortLineEdit->setText(QString::number(cfg->local_port));
+  newLocalIPLineEdit->setText(cfg->local_ip);
+  newLocalPortLineEdit->setText(QString::number(cfg->local_port));
 
-  QChart *chart = new QChart();
-  chart->legend()->hide();
-  chart->addSeries(series);
-  chart->createDefaultAxes();
-  chart->setTitle("Simple line chart example");
+  sampleCountLineEdit->setText(QString::number(cfg->sample_count));
+  triggerCombo->setCurrentIndex(cfg->trigger);
 
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-  return chartView;
-}
+  delayCountLineEdit->setText(QString::number(cfg->delay_count));
+  outerTriggerCombo->setCurrentIndex(cfg->outer_trigger);
 
-void Dashboard::onBtnClicked() {
-  std::cout << "on btnc clicked" << std::endl;
+  repeatLineEdit->setText(QString::number(cfg->repeat_count));
+  channelCountCombo->setCurrentIndex(cfg->ad_channel - 1);
+
+  sampleCount2LineEdit->setText(QString::number(cfg->sample_count2));
+  if(cfg->ad_bit == 12) {
+    adBitCombo->setCurrentIndex(0);
+  }else{
+    adBitCombo->setCurrentIndex(1);
+  }
+
+  packageCountLineEdit->setText(QString::number(package_count(cfg)));
+
 }
 
 void Dashboard::setupValidatorForUIFields() {
@@ -227,7 +278,8 @@ void Dashboard::setupValidatorForUIFields() {
 void Dashboard::setupConnections() {
   LOG(INFO) << "Dashboard::setupConnections";
 
-  connect(startConnectBtn, &QPushButton::clicked, this, &Dashboard::onStartConnectBtnClicked);
+  connect(connectDeviceBtn, &QPushButton::clicked, this, &Dashboard::onConnectDeviceBtnClicked);
+  connect(disconnectDeviceBtn, &QPushButton::clicked, this, &Dashboard::onDisconnectDeviceBtnClicked);
   connect(packageCountBtn, &QPushButton::clicked, this, &Dashboard::onPackageCountBtnClicked);
   connect(writeConfigBtn, &QPushButton::clicked, this, &Dashboard::onWriteConfigBtnClicked);
   connect(sendConfigBtn, &QPushButton::clicked, this, &Dashboard::onSendConfigBtnClicked);
@@ -235,8 +287,27 @@ void Dashboard::setupConnections() {
   connect(stopCollectBtn, &QPushButton::clicked, this, &Dashboard::onStopReceiveBtnClicked);
 }
 
-void Dashboard::onStartConnectBtnClicked(){
-  LOG(INFO) << "Dashboard::onStartConnectBtnClicked";
+void Dashboard::onConnectDeviceBtnClicked(){
+  LOG(INFO) << "Dashboard::onConnectDeviceBtnClicked";
+
+  int connect_result = connect_device(cfg, addr);
+  if (connect_result == CONNECT_SUCCESS) {
+    QMessageBox::about(this, "建立连接", "建立连接成功");
+    connectDeviceBtn->setEnabled(false);
+    disconnectDeviceBtn->setEnabled(true);
+  }else{
+    QMessageBox::warning(this, "建立连接", "建立连接失败");
+    connectDeviceBtn->setEnabled(true);
+    disconnectDeviceBtn->setEnabled(false);
+  }
+}
+
+void Dashboard::onDisconnectDeviceBtnClicked(){
+  LOG(INFO) << "Dashboard::onDisconnectDeviceBtnClicked";
+  int result = disconnect_device(cfg, addr);
+  QMessageBox::about(this, "断开连接", "断开连接成功");
+  connectDeviceBtn->setEnabled(true);
+  disconnectDeviceBtn->setEnabled(false);
 }
 
 void Dashboard::onPackageCountBtnClicked(){
@@ -246,6 +317,30 @@ void Dashboard::onPackageCountBtnClicked(){
 
 void Dashboard::onWriteConfigBtnClicked(){
   LOG(INFO) << "Dashboard::onWriteConfigBtnClicked";
+
+  QString fileName = QFileDialog::getSaveFileName(this,
+      "Write config to File", 
+      "",
+      "All Files (*)");
+  if (fileName.isEmpty())
+    return;
+  else {
+    std::cout << fileName.toStdString() << std::endl;
+  }
+
+  FILE *fp = fopen(fileName.toStdString().c_str(), "w");
+  if(fp == NULL) {
+    QMessageBox::warning(this, "保存配置", "配置保存失败, 文件打开失败");
+    return;
+  }
+  int res = write_config(cfg, fp);
+  if(res == WRITE_CONFIG_SUCCESS) {
+    QMessageBox::about(this, "保存配置", "配置保存成功");
+  }else{
+    QMessageBox::warning(this, "保存配置", "配置保存失败");
+  }
+
+  fclose(fp);
 }
 
 void Dashboard::onSendConfigBtnClicked(){
